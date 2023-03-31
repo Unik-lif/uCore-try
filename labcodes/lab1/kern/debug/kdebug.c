@@ -72,6 +72,8 @@ stab_binsearch(const struct stab *stabs, int *region_left, int *region_right,
         int true_m = (l + r) / 2, m = true_m;
 
         // search for earliest stab with right type
+		// when fail at the end, l will become bigger than r.
+		// The logic here is simply to find the first m that suitable for our type.
         while (m >= l && stabs[m].n_type != type) {
             m --;
         }
@@ -81,7 +83,12 @@ stab_binsearch(const struct stab *stabs, int *region_left, int *region_right,
         }
 
         // actual binary search
-        any_matches = 1;
+        // For this while loop:
+		// 1. We assure the m is of right type. -> that will be computed for region_left or region_right.
+		// 2. We use binsearch to accelerate the speed to find m, we ensure at least one is smaller than addr,
+		// one is bigger than addr, but not ensure this m is the closest to the addr. When we are using binsearch,
+		// we implicitly omit some l and some r values. What we do here is simply found the right&left bounds. 
+		any_matches = 1;
         if (stabs[m].n_value < addr) {
             *region_left = m;
             l = true_m + 1;
@@ -102,6 +109,7 @@ stab_binsearch(const struct stab *stabs, int *region_left, int *region_right,
     }
     else {
         // find rightmost region containing 'addr'
+		// Now we want to have a closer result.
         l = *region_right;
         for (; l > *region_left && stabs[l].n_type != type; l --)
             /* do nothing */;
@@ -149,6 +157,7 @@ debuginfo_eip(uintptr_t addr, struct eipdebuginfo *info) {
         return -1;
 
     // Search within that file's stabs for the function definition
+	// File -> Function -> Line.
     // (N_FUN).
     int lfun = lfile, rfun = rfile;
     int lline, rline;
@@ -158,10 +167,10 @@ debuginfo_eip(uintptr_t addr, struct eipdebuginfo *info) {
         // stabs[lfun] points to the function name
         // in the string table, but check bounds just in case.
         if (stabs[lfun].n_strx < stabstr_end - stabstr) {
-            info->eip_fn_name = stabstr + stabs[lfun].n_strx;
+            info->eip_fn_name = stabstr + stabs[lfun].n_strx; // point to where the string stores.
         }
-        info->eip_fn_addr = stabs[lfun].n_value;
-        addr -= info->eip_fn_addr;
+        info->eip_fn_addr = stabs[lfun].n_value; // n_value is the value of the symbol. See objudmp -t, we can get this info.
+        addr -= info->eip_fn_addr; // ? I don't know why? -> check STABS S_LINE type you will know the reason. 
         // Search within the function definition for the line number.
         lline = lfun;
         rline = rfun;
@@ -250,7 +259,7 @@ print_debuginfo(uintptr_t eip) {
 static __noinline uint32_t
 read_eip(void) {
     uint32_t eip;
-    asm volatile("movl 4(%%ebp), %0" : "=r" (eip));
+    asm volatile("movl %%ebp, %0" : "=r" (eip));
     return eip;
 }
 
@@ -302,5 +311,22 @@ print_stackframe(void) {
       *           NOTICE: the calling funciton's return addr eip  = ss:[ebp+4]
       *                   the calling funciton's ebp = ss:[ebp]
       */
+	int time = 0;
+	uint32_t ebp = read_ebp(); // | return address  | <-- caller's eip. read_ebp will simply return ebp value.
+							   // - - - - - - - - - -
+	uint32_t eip = read_eip(); // |   last  ebp     | <-- ebp point to this position. read_eip will load the memory 4(%%ebp).
+	// BTW: the read_eip function here is very tricky!! Understand this thing is of great fun!	
+	
+	// End point: when ebp is equal to 0, then our stackframe chain ends.
+	while (ebp != 0 && time < STACKFRAME_DEPTH) {
+		cprintf("ebp:%08x eip:%08x ", ebp, eip);
+		uint32_t* args = (uint32_t*) ebp + 2;
+		cprintf("args:%08x %08x %08x %08x\n", args[0], args[1], args[2], args[3]);
+		// eip - 1 is sufficient for us to use binsearch to locate the line.
+		print_debuginfo(eip - 1);
+		eip = *((uint32_t*) ebp + 1);
+		ebp = *((uint32_t*) ebp);
+		time++;
+	}	
 }
 

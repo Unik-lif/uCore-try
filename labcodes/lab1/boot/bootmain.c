@@ -31,7 +31,7 @@
  * */
 
 #define SECTSIZE        512
-#define ELFHDR          ((struct elfhdr *)0x10000)      // scratch space
+#define ELFHDR          ((struct elfhdr *)0x10000)      // scratch space, 64 KB.
 
 /* waitdisk - wait for disk ready */
 static void

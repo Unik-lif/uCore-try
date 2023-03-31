@@ -33,6 +33,7 @@
 #define STA_A            0x1            // Accessed
 
 /* System segment type bits */
+/* in 386 machine manual, it seems to have only 3 types of IDT Gate Descriptors */
 #define STS_T16A        0x1            // Available 16-bit TSS
 #define STS_LDT            0x2            // Local Descriptor Table
 #define STS_T16B        0x3            // Busy 16-bit TSS
@@ -50,8 +51,8 @@
 struct gatedesc {
     unsigned gd_off_15_0 : 16;        // low 16 bits of offset in segment
     unsigned gd_ss : 16;            // segment selector
-    unsigned gd_args : 5;            // # args, 0 for interrupt/trap gates
-    unsigned gd_rsv1 : 3;            // reserved(should be zero I guess)
+    unsigned gd_args : 5;            // # args, 0 for interrupt/trap gates -> Unik-lif: Reserved, not used.
+    unsigned gd_rsv1 : 3;            // reserved(should be zero I guess) -> Unik-lif: should be 0 for interrupt/trap gates.
     unsigned gd_type : 4;            // type(STS_{TG,IG32,TG32})
     unsigned gd_s : 1;                // must be 0 (system)
     unsigned gd_dpl : 2;            // descriptor(meaning new) privilege level
@@ -81,6 +82,7 @@ struct gatedesc {
 }
 
 /* Set up a call gate descriptor */
+/* Not involved at least in LAB 1 */
 #define SETCALLGATE(gate, ss, off, dpl) {                \
     (gate).gd_off_15_0 = (uint32_t)(off) & 0xffff;        \
     (gate).gd_ss = (ss);                                \

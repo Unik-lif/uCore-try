@@ -1,0 +1,28 @@
++ cc kern/debug/kdebug.c
++ ld bin/kernel
+(THU.CST) os is loading ...
+
+Special kernel symbols:
+  entry  0x00100000 (phys)
+  etext  0x00103370 (phys)
+  edata  0x0010fa16 (phys)
+  end    0x00110d08 (phys)
+Kernel executable memory footprint: 68KB
+eip initiail:00007ad8 or another: 00100cbd
+ebp:00007b28 eip:00007ad8 args:00010094 00010094 00007b58 0010008e
+    <unknow>: -- 0x00007ad7 --
+ebp:00007b38 eip:00100cbd args:00000000 00000000 00000000 00007ba8
+    kern/debug/kmonitor.c:125: mon_backtrace+10
+ebp:00007b58 eip:0010008e args:00000000 00007b80 ffff0000 00007b84
+    kern/init/init.c:48: grade_backtrace2+33
+ebp:00007b78 eip:001000bc args:00000000 ffff0000 00007ba4 00000029
+    kern/init/init.c:53: grade_backtrace1+40
+ebp:00007b98 eip:001000dc args:00000000 00100000 ffff0000 0000001d
+    kern/init/init.c:58: grade_backtrace0+23
+ebp:00007bb8 eip:00100104 args:0010339c 00103380 000012f2 00000000
+    kern/init/init.c:63: grade_backtrace+34
+ebp:00007be8 eip:00100051 args:00000000 00000000 00000000 00007c4f
+    kern/init/init.c:28: kern_init+80
+ebp:00007bf8 eip:00007d72 args:c031fcfa c08ed88e 64e4d08e fa7502a8
+    <unknow>: -- 0x00007d71 --
+++ setup timer interrupts
